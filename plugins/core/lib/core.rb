@@ -1,42 +1,71 @@
 
-require 'java'
-require 'fileutils'
+$:.push(File.dirname(__FILE__))
 
-require "core/logger"
-require "core/reentry_helpers"
-require "core/controller"
-require "core/gui"
-require "core/has_spi"
-require "core/interface"
-require "core/model"
-require "core/observable"
-require "core/observable_struct"
-require "core/persistent_cache"
-require "core/plugin"
-require "core/plugin/storage"
-
-require "core/task"
-require "core/task_queue"
-require "core/resource"
+load 'core/preference.rb'
+load 'core/menu.rb'
+load 'core/sensitive.rb'
+load 'core/keymap.rb'
+load 'core/command_activation.rb'
+load 'core/executor.rb'
+load 'core/command.rb'
+load 'core/plugin.rb'
+load 'core/tab.rb'
+load 'core/range.rb'
+load 'core/window.rb'
+load 'core/app.rb'
+load 'core/hook.rb'
+load 'core/tooltip.rb'
+load 'core/bundles.rb'
+load 'core/gui.rb'
+load 'core/speedbar.rb'
+load 'core/shell_command.rb'
+load 'core/pane.rb'
+load 'core/notebook_pane.rb'
+load 'core/template.rb'
+load 'core/command_history.rb'
+load 'core/dialog.rb'
+load 'core/dbus.rb'
 
 module Redcar
-  def self.tmp_dir
-    path = File.join(Redcar.user_dir, "tmp")
-    unless File.exists?(path)
-      FileUtils.mkdir(path)
+  class CorePlugin < Redcar::Plugin
+    def self.load(plugin) # :nodoc:
+      App.load
+      Tooltip.load
+      Menu.load
+      Preference.load
+      NotebookPane.load
+      Tab.load
+      Gui.load
+      Command.load
+      Keymap.load
+      Bundle.load
+      Zerenity::Base.no_main_loop = true
+      Hook.register(:new_pane)
+      plugin.transition(FreeBASE::LOADED)
     end
-    path
-  end
-    
-  class Core
-    include HasLogger
-    
-    def self.loaded
-      Core::Logger.init
-      unless File.exist?(Redcar.user_dir)
-        FileUtils.mkdir(Redcar.user_dir)
+
+    def self.start(plugin)
+      Menu.start
+      Tab.start
+      Gui.start
+      Command.start
+      Hook.attach(:redcar_start) do
+        puts "redcar_start: #{Time.now - Redcar::PROCESS_START_TIME} seconds"
       end
-      PersistentCache.storage_dir = File.join(Redcar.user_dir, "cache")
+      unless Redcar::App.ARGV.include?("--multiple-instance")
+        Redcar::DBus.start_listener
+      end
+      plugin.transition(FreeBASE::RUNNING)
+    end
+
+    def self.stop(plugin)
+      Menu.stop
+      Tab.stop
+      Command.stop
+      plugin.transition(FreeBASE::LOADED)
     end
   end
 end
+
+load File.dirname(__FILE__) + '/../commands/tab_command.rb'
+Dir[File.dirname(__FILE__) + "/../commands/*"].each {|fn| load fn}
