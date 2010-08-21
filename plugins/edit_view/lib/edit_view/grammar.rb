@@ -26,18 +26,18 @@ module Redcar
     
     def word
       # No Grammar loaded, but apparently some kind of document present
-      initialize_grammar do |grammar|
+      after_loading do
         word
       end
     end
     
     def comment
-      initialize_grammar do |grammar|
+      after_loading do
         comment
       end
     end
     
-    def initialize_grammar(&block)
+    def after_loading(&block)
       change_grammar(@doc.edit_view.grammar)
       yield(self)
     end
