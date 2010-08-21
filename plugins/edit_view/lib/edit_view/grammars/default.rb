@@ -5,6 +5,10 @@ module Redcar
       def word
         /^\w+$/
       end
+      
+      def comment
+        "--"
+      end
     end
   end
 end

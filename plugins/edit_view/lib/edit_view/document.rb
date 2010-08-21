@@ -293,6 +293,10 @@ module Redcar
     def word
       @grammar.word
     end
+    
+    def comment
+      @grammar.comment
+    end
 
     # The word at an offset.
     #

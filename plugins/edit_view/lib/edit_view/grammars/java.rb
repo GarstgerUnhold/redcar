@@ -1,13 +1,13 @@
 module Redcar
   class Grammar
-    module Ruby
+    module Java
       
       def word
-        /^(\w)+(\?|\!)?$/
+        /^\w+$/
       end
       
       def comment
-        "#"
+        "//"
       end
     end
   end
