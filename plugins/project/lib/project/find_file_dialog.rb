@@ -74,7 +74,20 @@ module Redcar
       end
       
       def ignore_regexes
-        Manager.storage['ignore_files_that_match_these_regexes']
+        res = []
+        Manager.storage['ignore_files_that_match_these_regexes'].each do |str|
+          res << case str[-2..-1]
+          when "/i"
+            Regexp.new(str[1..-3], Regexp::IGNORECASE)
+          when "/m"
+            Regexp.new(str[1..-3], Regexp::MULTILINE)
+          when "mi"
+            Regexp.new(str[1..-4], Regexp::IGNORECASE, Regexp::MULTILINE)
+          else
+            Regexp.new(str[1..-2])
+          end
+        end
+        res
       end
       
       def ignore_file?(filename)

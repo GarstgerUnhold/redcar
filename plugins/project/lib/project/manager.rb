@@ -6,8 +6,8 @@ module Redcar
       def self.storage
         @storage ||= begin
           storage = Plugin::Storage.new('project_plugin')
-          storage.set_default('ignore_files_that_match_these_regexes', [/.*\.redcar\/tags/i])
-          storage.set_default('ignore_files_that_match_these_regexes_example_for_reference', [/.*\.class/i])
+          storage.set_default('ignore_files_that_match_these_regexes', ["/.*\\.redcar\\/tags/i"])
+          storage.set_default('ignore_files_that_match_these_regexes_example_for_reference', ["/.*\\.class/i"])
           storage
         end
       end
