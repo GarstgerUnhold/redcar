@@ -2,6 +2,15 @@
 module Redcar
   class Project
     class Manager
+      
+      def self.storage
+        @storage ||= begin
+          storage = Plugin::Storage.new('project_plugin')
+          storage.set_default('ignore_files_that_match_these_regexes', [/.*\.redcar\/tags/i])
+          storage.set_default('ignore_files_that_match_these_regexes_example_for_reference', [/.*\.class/i])
+          storage
+        end
+      end
 
       def self.connect_to_remote(protocol, host, user, path, private_key_files = [])
         if protocol == "SFTP" and private_key_files.any?
@@ -89,10 +98,6 @@ module Redcar
       def self.init_drb_listener
         return if ARGV.include?("--multiple-instance")
         @drb_service = DrbService.new
-      end
-      
-      def self.storage
-        @storage ||= Plugin::Storage.new('project_plugin')
       end
       
       def self.filter_path

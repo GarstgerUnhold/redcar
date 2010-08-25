@@ -1,15 +1,6 @@
 module Redcar
   class Project
-  
     class FindFileDialog < FilterListDialog
-      def self.storage
-        @storage ||= begin
-          storage = Plugin::Storage.new('find_file_dialog')
-          storage.set_default('ignore_files_that_match_these_regexes', [])
-          storage.set_default('ignore_files_that_match_these_regexes_example_for_reference', [/.*\.class/i])
-          storage
-        end
-      end
       
       attr_reader :project
       
@@ -30,7 +21,6 @@ module Redcar
                   find_files(filter, project.path)
           paths.uniq! # in case there's some dupe's between the two lists
         end
-                
         @last_list = paths        
         full_paths = paths
         display_paths = full_paths.map { |path| display_path(path) }
@@ -84,11 +74,13 @@ module Redcar
       end
       
       def ignore_regexes
-        self.class.storage['ignore_files_that_match_these_regexes']
+        Manager.storage['ignore_files_that_match_these_regexes']
       end
       
       def ignore_file?(filename)
-        ignore_regexes.any? {|re| re =~ filename }
+        if ignore_regexes.any? {|re| re =~ filename }
+          true
+        end
       end
       
       def find_files_from_list(text, file_list)
@@ -99,7 +91,7 @@ module Redcar
       end
       
       def find_files(text, directories)
-        filter_and_rank_by(project.all_files.sort, text) do |fn|
+        filter_and_rank_by(project.all_files.reject {|f| ignore_file?(f)}.sort, text) do |fn|
           fn.split("/").last
         end
       end
