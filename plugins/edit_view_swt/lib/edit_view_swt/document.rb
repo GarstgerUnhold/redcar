@@ -103,7 +103,7 @@ module Redcar
       # @param [String] text  replacement text
       def replace(offset, length, text)
         @model.verify_text(offset, offset+length, text)
-        text = text.gsub(delim, "") if single_line?
+        text = text.gsub(line_delimiter, "") if single_line?
         jface_document.replace(offset, length, text)
         #if length > text.length
         #  @swt_mate_document.mateText.redraw
