@@ -268,10 +268,16 @@ module Redcar
       @mate_text.set_grammar_by_name(name)
     end
 
+    # The line_ix of the line at the top of the viewport.
+    #
+    # @return [Integer] a zero-based line index
     def smallest_visible_line
       @mate_text.viewer.get_top_index
     end
 
+    # The line_ix of the line at the bottom of the viewport.
+    #
+    # @return [Integer] a zero-based line index
     def biggest_visible_line
       @mate_text.viewer.get_bottom_index
     end

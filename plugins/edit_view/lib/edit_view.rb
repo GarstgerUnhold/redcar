@@ -71,7 +71,7 @@ module Redcar
         end
       end
     end
-    
+
     def self.toolbars
       ToolBar::Builder.build do
         item "Cut", :command => Redcar::Top::CutCommand, :icon => File.join(Redcar::ICONS_DIRECTORY, "scissors-blue.png"), :barname => :edit
@@ -333,12 +333,12 @@ module Redcar
       @document = Redcar::Document.new(self)
     end
 
-    def_delegators :controller, :undo,      :redo,
-                                :undoable?, :redoable?,
-                                :reset_undo,
-                                :cursor_offset, :cursor_offset=,
-                                :scroll_to_line, :compound,
-                                :begin_compound, :end_compound
+    def_delegators :controller, :undo, :redo, :undoable?, :redoable?,
+                                :reset_undo, :cursor_offset, :cursor_offset=,
+                                :scroll_to_line, :compound, :begin_compound,
+                                :end_compound, :biggest_visible_line,
+                                :smallest_visible_line, :ensure_visible,
+                                :scroll_to_line
 
     def grammar
       @grammar
