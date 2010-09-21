@@ -2,7 +2,7 @@
 module Redcar
   class StripTrailingSpaces
     def self.enabled?
-      Redcar::StripTrailingSpaces.storage['enabled']
+      !!Redcar::StripTrailingSpaces.storage['enabled']
     end
 
     def self.enabled=(bool)
@@ -10,7 +10,7 @@ module Redcar
     end
 
     def self.strip_blank_lines?
-      Redcar::StripTrailingSpaces.storage['strip_blank_lines']
+      !!Redcar::StripTrailingSpaces.storage['strip_blank_lines']
     end
 
     def self.strip_blank_lines=(bool)

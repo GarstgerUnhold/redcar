@@ -28,7 +28,7 @@ begin
         'plugins/*/lib/**/*.rb'
       ]
     t.options = ['--markup', 'markdown']
-  end  
+  end
 rescue LoadError
 end
 
@@ -50,14 +50,14 @@ def find_ci_reporter(filename)
 end
 
 task :specs_ci do
-  rspec_loader = find_ci_reporter "rspec_loader"  
+  rspec_loader = find_ci_reporter "rspec_loader"
   files = Dir['plugins/*/spec/*/*_spec.rb'] + Dir['plugins/*/spec/*/*/*_spec.rb'] + Dir['plugins/*/spec/*/*/*/*_spec.rb']
   opts = "-J-XstartOnFirstThread" if Config::CONFIG["host_os"] =~ /darwin/
   opts = "#{opts} -S spec --require #{rspec_loader} --format CI::Reporter::RSpec -c #{files.join(" ")}"
   sh("jruby #{opts} && echo 'done'")
 end
 
-task :cucumber_ci do  
+task :cucumber_ci do
   opts = "-J-XstartOnFirstThread" if Config::CONFIG["host_os"] =~ /darwin/
   opts = "#{opts} bin/cucumber -f progress -f junit --out features/reports/ plugins/*/features"
   sh("jruby #{opts} && echo 'done'")
@@ -124,29 +124,29 @@ spec = Gem::Specification.new do |s|
   s.extra_rdoc_files  = %w(README.md)
   s.rdoc_options      = %w(--main README.md)
 
-  
-  
-  s.files             = %w(CHANGES LICENSE Rakefile README.md) + 
-                          Dir.glob("bin/redcar") + 
-                          Dir.glob("config/**/*") + 
-                          Dir.glob("share/**/*") + 
-                          remove_gitignored_files(Dir.glob("lib/**/*")) + 
-                          remove_matching_files(remove_gitignored_files(Dir.glob("plugins/**/*")), "redcar-bundles") + 
-                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/Syntaxes/**/*") + 
-                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/Preferences/**/*") + 
-                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/Snippets/**/*") + 
-                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/info.plist") + 
+
+
+  s.files             = %w(CHANGES LICENSE Rakefile README.md) +
+                          Dir.glob("bin/redcar") +
+                          Dir.glob("config/**/*") +
+                          Dir.glob("share/**/*") +
+                          remove_gitignored_files(Dir.glob("lib/**/*")) +
+                          remove_matching_files(remove_gitignored_files(Dir.glob("plugins/**/*")), "redcar-bundles") +
+                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/Syntaxes/**/*") +
+                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/Preferences/**/*") +
+                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/Snippets/**/*") +
+                          Dir.glob("plugins/textmate/vendor/redcar-bundles/Bundles/*.tmbundle/info.plist") +
                           Dir.glob("plugins/textmate/vendor/redcar-bundles/Themes/*.tmTheme")
   s.executables       = FileList["bin/redcar"].map { |f| File.basename(f) }
-   
+
   s.require_paths     = ["lib"]
 
   s.add_dependency("rubyzip")
-  
+
   s.add_development_dependency("cucumber")
   s.add_development_dependency("rspec")
   s.add_development_dependency("watchr")
-  
+
   s.post_install_message = <<TEXT
 
 ------------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ Please now run:
 
   $ redcar install
 
-to complete the installation. (NB do NOT use sudo. In previous versions, sudo was 
+to complete the installation. (NB do NOT use sudo. In previous versions, sudo was
 required for this step, but now it should be run as the user.)
 
 NB. This will download jars that Redcar needs to run from the internet. It will put
@@ -225,7 +225,7 @@ task :app_bundle => :build do
     FileUtils.cp_r f, File.join(resources_dir, f), :remove_destination => true
   end
 
-  FileUtils.cp_r File.join(resources_dir, "plugins", "application", "icons", redcar_icon), 
+  FileUtils.cp_r File.join(resources_dir, "plugins", "application", "icons", redcar_icon),
       resources_dir, :remove_destination => true
 end
 
@@ -238,8 +238,8 @@ task :run_ci do
       a = "jruby -S spec #{filename} --backtrace"
       puts a
       system a
-    end  
-  
+    end
+
     spec_filename = "#{filename[1]}_spec.rb"
     spec = Dir["**/#{spec_filename}"]
     if spec.length > 0
@@ -260,14 +260,14 @@ task :release => :gem do
     :access_key_id     => credentials['access_key_id'],
     :secret_access_key => credentials["secret_access_key"]
   )
-  
+
   redcar_bucket = AWS::S3::Bucket.find('redcar')
   s3_uploads = {
     "vendor/java-mateview/release/java-mateview.jar" => "java-mateview-#{REDCAR_VERSION}.jar",
     "plugins/application_swt/lib/dist/application_swt.jar"   => "application_swt-#{REDCAR_VERSION}.jar",
     "pkg/redcar-#{REDCAR_VERSION}.gem"                       => "redcar-#{REDCAR_VERSION}.gem"
   }
-  
+
   s3_uploads.each do |source, target|
     AWS::S3::S3Object.store(target, open(source), 'redcar', :access => :public_read)
   end
@@ -279,7 +279,7 @@ namespace :redcar do
   end
 
   require 'json'
-  
+
   desc "Redcar Integration: output runnable info"
   task :runnables do
     mkdir_p(".redcar/runnables")
@@ -290,16 +290,16 @@ namespace :redcar do
         $stderr.sync = true
       RUBY
     end
-    
+
     tasks = Rake::Task.tasks
     runnables = []
-    ruby_bin = Config::CONFIG["bindir"] + "/ruby -r#{File.dirname(__FILE__)}/.redcar/runnables/sync_stdout.rb " 
+    ruby_bin = Config::CONFIG["bindir"] + "/ruby -r#{File.dirname(__FILE__)}/.redcar/runnables/sync_stdout.rb "
     tasks.each do |task|
       name = task.name.gsub(":", "/")
       command = ruby_bin + $0 + " " + task.name
       runnables << {
         "name"        => name,
-        "command"     => command, 
+        "command"     => command,
         "description" => task.comment,
         "type"        => "task/ruby/rake"
       }
@@ -309,7 +309,7 @@ namespace :redcar do
       f.puts(JSON.pretty_generate(data))
     end
     File.open(".redcar/runnables/ruby.json", "w") do |f|
-      data = {"file_runners" => 
+      data = {"file_runners" =>
         [
           {
             "regex" =>    ".*.rb$",
@@ -322,7 +322,7 @@ namespace :redcar do
       f.puts(JSON.pretty_generate(data))
     end
   end
-  
+
   task :sample do
     5.times do |i|
       puts "out#{i}"
