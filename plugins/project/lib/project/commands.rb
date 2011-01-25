@@ -224,6 +224,12 @@ module Redcar
       end
     end
 
+    class FindRecentCommand < ProjectCommand
+      def execute
+        FindRecentDialog.new.open
+      end
+    end
+
     class RevealInProjectCommand < ProjectCommand
       def execute
         if Project::Manager.reveal_file?(project)
@@ -296,10 +302,13 @@ module Redcar
     end
 
     class OpenDirectoryInExplorerCommand < OpenCommand
-      LinuxApps = { 'Thunar' => '%s',
-        'nautilus' => '%s',
+      LinuxApps = {
+        'Thunar'    => '%s',
+        'nautilus'  => '%s',
         'konqueror' => '%s',
-        'kfm' => '%s' }
+        'pcmanfm'   => '%s',
+        'kfm'       => '%s'
+      }
 
       def explorer_osx
         ['open -a Finder', path]
@@ -332,9 +341,12 @@ module Redcar
     end
 
     class OpenDirectoryInCommandLineCommand < OpenCommand
-      LinuxApps = { 'xfce4-terminal' => "--working-directory=%s",
+      LinuxApps = {
+        'xfce4-terminal' => "--working-directory=%s",
         'gnome-terminal' => "--working-directory=%s",
-        'konsole' => "--workdir %s" }
+        'lxterminal'     => "--working-directory=%s",
+        'konsole'        => "--workdir %s"
+      }
 
       def osx_terminal_script(preferred)
         if preferred.start_with? "iTerm"
