@@ -74,10 +74,15 @@ module Redcar
         Runnables::RunningProcessChecker.new(
           Redcar.app.all_tabs.select {|t| t.is_a?(HtmlTab)},
           "Kill all and quit?",
-          :none     => lambda { Redcar.app.quit },
-          :continue => lambda { Redcar.app.quit },
+          :none     => lambda { quit },
+          :continue => lambda { quit },
           :cancel   => nil
         ).check
+      end
+      
+      def quit
+        Project::Manager.open_projects.each {|pr| pr.close }
+        Redcar.app.quit
       end
     end
 
@@ -1011,6 +1016,7 @@ Redcar.environment: #{Redcar.environment}
         link "Cmd+O",       Project::FileOpenCommand
         link "Cmd+U",       Project::FileReloadCommand
         link "Cmd+Shift+O", Project::DirectoryOpenCommand
+        link "Cmd+Alt+Ctrl+P",   Project::FindRecentCommand
         #link "Cmd+Ctrl+O",  Project::OpenRemoteCommand
         link "Cmd+S",       Project::FileSaveCommand
         link "Cmd+Shift+S", Project::FileSaveAsCommand
@@ -1055,7 +1061,6 @@ Redcar.environment: #{Redcar.environment}
         link "Ctrl+=",       EditView::AlignAssignmentCommand
         link "Ctrl+Shift+^", SortLinesCommand
 
-        link "Cmd+Shift+F",     Redcar::FindInProject::OpenSearch
         link "Cmd+T",           Project::FindFileCommand
         link "Cmd+Shift+Alt+O", MoveTabToOtherNotebookCommand
         link "Cmd+Alt+O",       SwitchNotebookCommand
@@ -1099,6 +1104,7 @@ Redcar.environment: #{Redcar.environment}
         link "Ctrl+Alt+N",   NewWindowCommand
         link "Ctrl+O",       Project::FileOpenCommand
         link "Ctrl+Shift+O", Project::DirectoryOpenCommand
+        link "Ctrl+Alt+Shift+P",   Project::FindRecentCommand
         #link "Alt+Shift+O",  Project::OpenRemoteCommand
         link "Ctrl+S",       Project::FileSaveCommand
         link "Ctrl+Shift+S", Project::FileSaveAsCommand
@@ -1135,6 +1141,7 @@ Redcar.environment: #{Redcar.environment}
         link "Escape",           AutoCompleter::AutoCompleteCommand
         link "Ctrl+Escape",      AutoCompleter::MenuAutoCompleterCommand
         link "Ctrl+Space",       AutoCompleter::AutoCompleteCommand
+        
         link "Ctrl+Shift+Space", AutoCompleter::MenuAutoCompleterCommand
 
         link "Ctrl+U",           EditView::UpcaseTextCommand
@@ -1145,7 +1152,6 @@ Redcar.environment: #{Redcar.environment}
         link "Ctrl+=",           EditView::AlignAssignmentCommand
         link "Ctrl+Shift+^",     SortLinesCommand
 
-        link "Ctrl+Shift+F",     Redcar::FindInProject::OpenSearch
         link "Ctrl+T",           Project::FindFileCommand
         link "Ctrl+Shift+Alt+O", MoveTabToOtherNotebookCommand
 
@@ -1207,7 +1213,6 @@ Redcar.environment: #{Redcar.environment}
           group(:priority => :first) do
             item "New", NewCommand
             item "New Window", NewWindowCommand
-            item "Open Recent...", Project::FindRecentCommand
           end
 
           group(:priority => 10) do

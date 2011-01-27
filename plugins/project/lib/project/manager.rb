@@ -243,15 +243,28 @@ module Redcar
         tab.focus
       end
 
+      PROJECT_LOCKED_MESSAGE = "Project appears to be locked by another Redcar process!\nOpen anway?"
+      
       # Opens a new Tree with a DirMirror and DirController for the given
       # path, in a new window.
       #
       # @param [String] path  the path of the directory to view
       def self.open_project_for_path(path)
-        win = Redcar.app.focussed_window
-        win = Redcar.app.new_window if !win or Manager.in_window(win)
-        project = Project.new(path).tap do |p|
-          p.open(win) if p.ready?
+        open_projects.each do |project|
+          if project.path == path
+            project.window.focus
+            return
+          end
+        end
+        project = Project.new(path)
+        should_open = true
+        if project.locked?
+          should_open = Application::Dialog.message_box(PROJECT_LOCKED_MESSAGE, :type => :warning, :buttons => :yes_no)
+        end
+        if should_open
+          win = Redcar.app.focussed_window
+          win = Redcar.app.new_window if !win or Manager.in_window(win)
+          project.open(win) if project.ready?
         end
       end
 
@@ -385,20 +398,18 @@ module Redcar
               item "Open", Project::FileOpenCommand
               item "Reload File", Project::FileReloadCommand
               item "Open Directory", Project::DirectoryOpenCommand
-              #item "Open Remote...", Project::OpenRemoteCommand
-              lazy_sub_menu "Open Recent" do
-                Project::Recent.generate_menu(self)
-              end
-
+              item "Open Recent...", Project::FindRecentCommand
+              
               separator
               item "Save", Project::FileSaveCommand
               item "Save As", Project::FileSaveAsCommand
             end
           end
+          
           sub_menu "Project", :priority => 15 do
             group(:priority => :first) do
               item "Find File", Project::FindFileCommand
-              item "Refresh Directory", Project::RefreshDirectoryCommand
+              # item "Refresh Directory", Project::RefreshDirectoryCommand
             end
             item "Reveal Open File in Tree", :command => Project::ToggleRevealInProject, :type => :check, :active => Project::Manager.reveal_files?
           end
