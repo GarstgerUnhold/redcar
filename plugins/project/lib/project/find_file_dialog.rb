@@ -1,19 +1,9 @@
 require 'set'
 
 module Redcar
-  class Project    
+  class Project
 
     class FindFileDialog < FilterListDialog
-      def self.storage
-        @storage ||= begin
-          storage = Plugin::Storage.new('find_file_dialog')
-          storage.set_default('ignore_file_patterns', false)
-          storage.set_default('ignore_files_that_match_these_regexes', [])
-          storage.set_default('ignore_files_that_match_these_regexes_example_for_reference', [/.*\.class/i])
-          storage
-        end
-      end
-
       attr_reader :project
 
       def initialize(project)
@@ -55,7 +45,7 @@ module Redcar
       def selected(text, ix, closing=false)
         if @last_list
           close
-          FileOpenCommand.new(@last_list[ix]).run
+          OpenFileCommand.new(@last_list[ix]).run
         end
       end
 
@@ -90,25 +80,19 @@ module Redcar
         end
       end
 
-      def ignore_regexes
-        self.class.storage['ignore_files_that_match_these_regexes']
-      end
-
-      def ignore_file?(filename)
-        if self.class.storage['ignore_file_patterns']
-          ignore_regexes.any? {|re| re =~ filename }
-        end
-      end
-
       def find_files_from_list(text, file_list)
         re = make_regex(text)
         file_list.select do |fn|
-          not ignore_file?(fn) and match_substring(fn) =~ re
+          match_substring(fn) =~ re
         end
       end
 
       def find_files(text, directories)
-        files = project.all_files.sort.select {|fn| not ignore_file?(fn)}
+        begin
+          files = project.all_files.sort
+        rescue => e
+          p e
+        end
         filter_and_rank_by(files, text) {|fn| match_substring(fn) }
       end
 

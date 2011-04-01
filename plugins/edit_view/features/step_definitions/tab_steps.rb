@@ -1,6 +1,6 @@
 
 Given /^there is an edit tab containing "([^\"]*)"$/ do |contents|
-  tab = Redcar::Top::NewCommand.new.run
+  tab = Redcar::Top::OpenNewEditTabCommand.new.run
   contents = eval(contents.inspect.gsub("\\\\", "\\"))
   cursor_offset = (contents =~ /<c>/)
   contents = contents.gsub("<c>", "")
@@ -11,28 +11,28 @@ Given /^there is an edit tab containing "([^\"]*)"$/ do |contents|
 end
 
 When /^I open a new edit tab$/ do
-  Redcar::Top::NewCommand.new.run
+  Redcar::Top::OpenNewEditTabCommand.new.run
 end
 
 When /^I close the focussed tab$/ do
-  Redcar::Top::CloseTabCommand.new.run
+  Redcar::Application::CloseTabCommand.new.run
 end
 
 When /I switch (up|down) a tab/ do |type|
   case type
   when "down"
-    Redcar::Top::SwitchTabDownCommand.new.run
+    Redcar::Application::SwitchTabDownCommand.new.run
   when "up"
-    Redcar::Top::SwitchTabUpCommand.new.run
+    Redcar::Application::SwitchTabUpCommand.new.run
   end
 end
 
 When /I move (up|down) a tab/ do |type|
   case type
   when "down"
-    Redcar::Top::MoveTabDownCommand.new.run
+    Redcar::Application::MoveTabDownCommand.new.run
   when "up"
-    Redcar::Top::MoveTabUpCommand.new.run
+    Redcar::Application::MoveTabUpCommand.new.run
   end
 end
 

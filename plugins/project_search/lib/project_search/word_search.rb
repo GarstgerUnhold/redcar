@@ -49,6 +49,7 @@ class ProjectSearch
               remove_hits << hit
             end
           end
+          
           hits_needing_post_context -= remove_hits
           
           if matching_line?(line)
@@ -59,11 +60,10 @@ class ProjectSearch
               hits_needing_post_context << hit
             end
           end
-          
-          if pre_context.length == context_size
+          pre_context << line
+          if pre_context.length > context_size
             pre_context.shift
           end
-          pre_context << line
         end
         send_file_results(file_hits)
       end
@@ -97,7 +97,25 @@ class ProjectSearch
           new_doc_ids = index.find(:contents => bit.downcase).map {|doc| doc.id }
           doc_ids = doc_ids ? (doc_ids & new_doc_ids) : new_doc_ids
         end
-        doc_ids
+        doc_ids.reject {|doc_id| Redcar::Project::FileList.hide_file_path?(doc_id) }
+      end
+    end
+  
+    def ignore_regexes
+      self.class.shared_storage['ignored_file_patterns']
+    end
+
+    def ignore_file?(filename)
+      if self.class.storage['ignore_file_patterns']
+        ignore_regexes.any? {|re| re =~ filename }
+      end
+    end
+
+    def inspect
+      if @results
+        "<ProjectSearch::WordSearch #{project.path} \"#{query_string}\" #{@results.length} hits>"
+      else
+        "<ProjectSearch::WordSearch #{project.path} \"#{query_string}\" ...>"
       end
     end
   end

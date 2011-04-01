@@ -4,7 +4,6 @@ require 'html_view/browser_bar'
 require 'html_view/html_tab'
 require 'html_controller'
 require 'html_view/default_controller'
-require 'json'
 
 module Redcar
   class HtmlView
@@ -19,7 +18,7 @@ module Redcar
     def self.keymaps
       map = Redcar::Keymap.build("main", [:osx, :linux, :windows]) do
         link "Alt+Shift+B", ToggleBrowserBar
-        link "Alt+Shift+P", FileWebPreview
+        link "Alt+Shift+P", ViewFileInWebBrowserCommand
       end
       [map]
     end
@@ -27,7 +26,7 @@ module Redcar
     def self.menus
       Redcar::Menu::Builder.build do
         sub_menu "File" do
-          item "Web Preview", :command => FileWebPreview, :priority => 8
+          item "Web Preview", :command => ViewFileInWebBrowserCommand, :priority => 8
         end
         sub_menu "View" do
           item "Toggle Browser Bar", :command => ToggleBrowserBar, :priority => 11
@@ -42,7 +41,7 @@ module Redcar
          storage
       end
     end
-
+    
     def self.show_browser_bar?
       if win = Redcar.app.focussed_window and
         win.speedbar and win.speedbar.is_a?(BrowserBar)

@@ -70,13 +70,14 @@ module Redcar
     end
 
     def self.load_textmate_assets
-      s = Time.now
-      load_textmate_assets_from_dir(Redcar.root + "/plugins/textmate/vendor/redcar-bundles")
-      Redcar.plugin_manager.loaded_plugins.each do |plugin|
-        load_textmate_assets_from_dir(File.dirname(plugin.definition_file) + "/")
+      Redcar.log.info("loaded JavaMateView #{JavaMateView::MateText.VERSION}")
+      Redcar.log.benchmark("load textmate assets") do
+        load_textmate_assets_from_dir(Redcar.root + "/plugins/textmate/vendor/redcar-bundles")
+        Redcar.plugin_manager.loaded_plugins.each do |plugin|
+          load_textmate_assets_from_dir(File.dirname(plugin.definition_file) + "/")
+        end
+        load_textmate_assets_from_dir(Redcar.user_dir + "/")
       end
-      load_textmate_assets_from_dir(Redcar.user_dir + "/")
-      puts "took #{Time.now - s}s to load textmate assets"
       EditView.themes.unshift(*JavaMateView::ThemeManager.themes.to_a.map {|th| th.name })
     end
 

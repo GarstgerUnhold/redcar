@@ -80,9 +80,10 @@ module Redcar
 
       def self.init_window_closed_hooks
         Redcar.app.add_listener(:window_about_to_close) do |win|
-          project = in_window(win)
-          project.close if project
-          self.save_file_list(win)
+          if project = in_window(win)
+            project.close
+            self.save_file_list(win)
+          end
         end
       end
 
@@ -96,23 +97,8 @@ module Redcar
           storage = Plugin::Storage.new('project_plugin')
           storage.set_default('reveal_files_in_project_tree',true)
           storage.set_default('reveal_files_only_when_tree_is_focussed',true)
-          storage.set_default('hidden_files_pattern', '(^\.|\.rbc$)')
-          storage.set_default('not_hidden_files', %w(.gitignore .gemtest))
           storage
         end
-      end
-
-      def self.hidden_files_pattern
-        Regexp.new storage['hidden_files_pattern']
-      end
-
-      def self.not_hidden_files
-        Array storage['not_hidden_files']
-      end
-
-      def self.hide_file?(file)
-        file = File.basename(file)
-        !not_hidden_files.include?(file) and file =~ hidden_files_pattern
       end
 
       def self.reveal_files?
@@ -128,7 +114,7 @@ module Redcar
       end
 
       def self.reveal_file?(project)
-        if project and tree = project.tree
+        if project and project.window and tree = project.tree
           if reveal_files? and project.window.trees_visible?
             ftree = project.window.treebook.focussed_tree
             unless tree != ftree and reveal_file_only_when_tree_focussed?
@@ -259,7 +245,7 @@ module Redcar
       end
 
       PROJECT_LOCKED_MESSAGE = "Project appears to be locked by another Redcar process!\nOpen anway?"
-      
+
       # Opens a new Tree with a DirMirror and DirController for the given
       # path, in a new window.
       #
@@ -272,11 +258,11 @@ module Redcar
           end
         end
         project = Project.new(path)
-        should_open = true
+        should_open = :yes
         if project.locked?
           should_open = Application::Dialog.message_box(PROJECT_LOCKED_MESSAGE, :type => :warning, :buttons => :yes_no)
         end
-        if should_open
+        if should_open == :yes
           win = Redcar.app.focussed_window
           win = Redcar.app.new_window if !win or Manager.in_window(win)
           project.open(win) if project.ready?
@@ -410,17 +396,17 @@ module Redcar
         Menu::Builder.build do
           sub_menu "File" do
             group(:priority => 0) do
-              item "Open", Project::FileOpenCommand
+              item "Open", Project::OpenFileCommand
               item "Reload File", Project::FileReloadCommand
               item "Open Directory", Project::DirectoryOpenCommand
               item "Open Recent...", Project::FindRecentCommand
-              
+
               separator
-              item "Save", Project::FileSaveCommand
-              item "Save As", Project::FileSaveAsCommand
+              item "Save", Project::SaveFileCommand
+              item "Save As", Project::SaveFileAsCommand
             end
           end
-          
+
           sub_menu "Project", :priority => 15 do
             group(:priority => :first) do
               item "Find File", Project::FindFileCommand
@@ -428,6 +414,32 @@ module Redcar
             end
             item "Reveal Open File in Tree", :command => Project::ToggleRevealInProject, :type => :check, :active => Project::Manager.reveal_files?
           end
+        end
+      end
+
+      def self.close_tab_guard(tab)
+        if tab.respond_to?(:edit_view) && tab.edit_view.document.modified?
+          tab.focus
+          result = Application::Dialog.message_box(
+          "This tab has unsaved changes. \n\nSave before closing?",
+          :buttons => :yes_no_cancel
+          )
+          case result
+          when :yes
+            # check if the tab was saved properly,
+            # it would return false for example if the permission is not granted
+            if Project::SaveFileCommand.new(tab).run
+              true
+            else
+              false
+            end
+          when :no
+            true
+          when :cancel
+            false
+          end
+        else
+          true
         end
       end
 
@@ -477,6 +489,35 @@ module Redcar
           end
           group(:priority => 75) do
             separator
+
+            if node and node.leaf?
+              item("Hide this file") do
+                input = Application::Dialog.input(
+                  "Hide file",
+                  "Please enter a pattern to hide this kind of files or press OK to hide this file only.",
+                  '^' + Regexp.escape(node.text) + '$'
+                )
+                if input[:button] == :ok
+                  Project::FileList.add_hide_file_pattern(input[:value])
+                  Project::Manager.focussed_project.refresh
+                end
+              end
+            end
+
+            if node and node.directory?
+              item('Hide this directory') do
+                input = Application::Dialog.input(
+                  'Hide directory',
+                  'Please enter a pattern to hide this kind of directories or press OK to hide this directory only.',
+                  '^' + Regexp.escape(node.text) + '$'
+                )
+                if input[:button] == :ok
+                  Project::FileList.add_hide_directory_pattern(input[:value])
+                  Project::Manager.focussed_project.refresh
+                end
+              end
+            end
+
             if DirMirror.show_hidden_files?
               item("Hide Hidden Files") do
                 DirMirror.show_hidden_files = false

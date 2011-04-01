@@ -8,7 +8,7 @@ module Redcar
   end
 
   class Project
-    class FileOpenCommand < Command
+    class OpenFileCommand < Command
       def initialize(path = nil, adapter = Adapters::Local.new)
         @path = path
         @adapter = adapter
@@ -17,7 +17,15 @@ module Redcar
       def execute
         path = get_path
         if path
-          Manager.open_file(path, @adapter)
+          if File.readable? path
+            Manager.open_file(path, @adapter)
+          else
+            Application::Dialog.message_box(
+              "Can't read #{path}, you don't have the permissions.",
+              :type => :error,
+              :buttons => :ok
+            )
+          end
         end
       end
 
@@ -134,23 +142,34 @@ module Redcar
     #  end
     #end
 
-    class FileSaveCommand < EditTabCommand
+    class SaveFileCommand < EditTabCommand
       def initialize(tab=nil)
         @tab = tab
       end
 
       def execute
         if tab.edit_view.document.mirror
-          tab.edit_view.document.save!
-          Project::Manager.refresh_modified_file(tab.edit_view.document.mirror.path)
+          if File.writable? tab.edit_view.document.mirror.path
+            tab.edit_view.document.save!
+            Project::Manager.refresh_modified_file(tab.edit_view.document.mirror.path)
+          else
+            Application::Dialog.message_box(
+              "Can't save #{tab.edit_view.document.mirror.path}, you don't have the permissions.",
+              :type => :error,
+              :buttons => :ok
+            )
+            result = false
+          end
         else
-          FileSaveAsCommand.new.run
+          result = SaveFileAsCommand.new.run
         end
         tab.update_for_file_changes
+        result ||= true
+        return result
       end
     end
 
-    class FileSaveAsCommand < EditTabCommand
+    class SaveFileAsCommand < EditTabCommand
 
       def initialize(tab=nil, path=nil)
         @tab  = tab
@@ -160,12 +179,23 @@ module Redcar
       def execute
         path = get_path
         if path
-          contents = tab.edit_view.document.to_s
-          new_mirror = FileMirror.new(path)
-          new_mirror.commit(contents)
-          tab.edit_view.document.mirror = new_mirror
-          Project::Manager.refresh_modified_file(tab.edit_view.document.mirror.path)
+          if File.exists?(path) ? File.writable?(path) : File.writable?(File.dirname(path))
+            contents = tab.edit_view.document.to_s
+            new_mirror = FileMirror.new(path)
+            new_mirror.commit(contents)
+            tab.edit_view.document.mirror = new_mirror
+            Project::Manager.refresh_modified_file(tab.edit_view.document.mirror.path)
+          else
+            Application::Dialog.message_box(
+              "Can't save #{path}, you don't have the permissions.",
+              :type => :error,
+              :buttons => :ok
+            )
+            result = false
+          end
         end
+        result ||= true
+        return result
       end
 
       private
@@ -189,7 +219,7 @@ module Redcar
       def execute
         if path = get_path
           project = Manager.open_project_for_path(path)
-          project.refresh
+          project.refresh if project
         end
       end
 
@@ -232,9 +262,9 @@ module Redcar
 
     class RevealInProjectCommand < ProjectCommand
       def execute
-        if Project::Manager.reveal_file?(project)
+        if project
           tab = Redcar.app.focussed_window.focussed_notebook_tab
-          if tab.is_a?(EditTab)
+            if tab.is_a?(EditTab)
             return unless mirror = tab.edit_view.document.mirror and mirror.respond_to? :path
           else
             return
