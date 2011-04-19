@@ -52,7 +52,6 @@ module Redcar
           end
         end
       end
-
     end
 
     def controllers(klass=nil)
@@ -664,6 +663,19 @@ module Redcar
     def scroll_to_line_at_top(line_ix)
       @edit_view.controller.scroll_to_line(line_ix)
     end
+    
+    # Tries to scroll so the given line is in the middle of the viewport.  If the line
+    # is above (smaller index) than the midline, defers to scroll_to_line_at_top(0).
+    #
+    # @param [Integer] line_ix  a zero-based line index
+    def scroll_to_line_at_middle(line_ix)
+      midline = num_lines_visible / 2
+      if line_ix > midline
+        scroll_to_line_at_top(line_ix - midline)
+      else
+        scroll_to_line_at_top(0)
+      end
+    end
 
     # The line_ix of the line at the top of the viewport.
     #
@@ -690,9 +702,21 @@ module Redcar
     def ensure_visible(offset)
       @edit_view.controller.ensure_visible(offset)
     end
+    
+    # Ensures the cursor is visible as near the center of the viewport as possible.  Scrolls
+    # vertically until the cursor is near the center.  Scrolls horizontally only enough to make
+    # the cursor visible.
+    def ensure_cursor_visible
+      scroll_to_line_at_middle(cursor_line)
+      ensure_visible(cursor_offset) unless visible_horizontal_index_range.include?(cursor_line_offset)
+    end
 
     def num_lines_visible
       biggest_visible_line - smallest_visible_line
+    end
+    
+    def visible_horizontal_index_range
+      smallest_visible_horizontal_index .. largest_visible_horizontal_index
     end
 
     # The scope hierarchy at this point
@@ -721,7 +745,7 @@ module Redcar
     def update_from_mirror
       previous_line      = cursor_line
       top_line           = smallest_visible_line
-
+      
       self.text          = mirror.read
 
       @modified          = false
@@ -741,6 +765,10 @@ module Redcar
       Document::Indentation.new(self, @edit_view.tab_width, @edit_view.soft_tabs?)
     end
 
+    def inspect
+      "#<Redcar::Document:#{object_id} #{title.inspect}>"
+    end
+    
     private
 
     def title_with_star

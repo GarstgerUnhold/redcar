@@ -200,9 +200,9 @@ def close_everything
     dialogs.each {|d| d.controller.model.close }
   end
   Redcar.app.windows.each do |win|
-    if p = Redcar::Project::Manager.in_window(win)
+    if pr = Redcar::Project::Manager.in_window(win)
       Swt.sync_exec do
-        p.close
+        pr.close
       end
     end
     win.treebook.trees.each do |tree|
@@ -243,13 +243,13 @@ end
 After do
   close_everything
   errors = Redcar.app.history.select {|command| command.error }
+  Redcar.app.history.clear
   if errors.any?
     raise "Command errors #{errors.inspect}"
   end
-  Redcar.app.history.clear
-  total_mem = java.lang.Runtime.getRuntime.totalMemory
-  free_mem  = java.lang.Runtime.getRuntime.freeMemory
-  #p [:total, total_mem, :free, free_mem, :diff, total_mem - free_mem]
+  # total_mem = java.lang.Runtime.getRuntime.totalMemory
+  # free_mem  = java.lang.Runtime.getRuntime.freeMemory
+  # p [:total, total_mem/1000, :free, free_mem/1000, :diff, (total_mem - free_mem)/1000]
 end
 
 at_exit {

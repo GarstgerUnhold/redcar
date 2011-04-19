@@ -21,7 +21,7 @@ module SwtTabHelpers
 
   def get_browser_contents
     live_document = "document.getElementsByTagName('html')[0].innerHTML"
-    focussed_tab.html_view.controller.execute("return #{live_document};").join('')
+    r = focussed_tab.html_view.controller.execute("return #{live_document};").join('')
   end
 
   def get_tab(tab_folder)

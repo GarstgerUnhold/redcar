@@ -34,6 +34,7 @@ module Redcar
       notify_listeners(:tab_added, tab) do
         @tabs << tab
       end
+      Redcar.app.call_on_plugins(:tab_added, tab)
       tab
     end
     
@@ -54,6 +55,7 @@ module Redcar
     def remove_tab!(tab)
       @tabs.delete(tab)
       @tab_handlers[tab].each {|h| tab.remove_listener(h) }
+      @tab_handlers.delete(tab)
       select_tab!(nil) unless @tabs.any?
     end
     
@@ -64,7 +66,7 @@ module Redcar
     end
     
     def sort_tabs!(&block)
-      @tabs.sort! &block
+      @tabs.sort!(&block)
     end
     
     # Focus the next tab to the right from the currently focussed tab.
@@ -142,6 +144,7 @@ module Redcar
         select_tab!(tab)
       end
       @tab_handlers[tab] << tab.add_listener(:close) do
+        Redcar.app.call_on_plugins(:tab_closed, tab)
         remove_tab!(tab)
         notify_listeners(:tab_closed)
       end
