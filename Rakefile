@@ -1,5 +1,5 @@
+require 'bundler'
 REDCAR_VERSION = "0.12.0dev" # also change in lib/redcar.rb!
-require 'rubygems'
 require 'fileutils'
 
 # explitely use rspec < 2.0
@@ -18,6 +18,15 @@ if RUBY_PLATFORM =~ /mswin|mingw/
     ARGV << "--nocolour"
   end
 end
+
+### GETTING STARTED IN DEVELOPMENT
+
+desc "Prepare code base for development"
+task :initialise do
+  sh "git submodule update --init --recursive"
+end
+
+task :initialize => :initialise
 
 ### DOCUMENTATION
 
@@ -135,11 +144,12 @@ task :specs do
   end
 end
 
-desc "Run features"
-task :features do
+desc "Run all features"
+task :cucumber do
   cmd = "jruby "
   cmd << "-J-XstartOnFirstThread " if Config::CONFIG["host_os"] =~ /darwin/
-  cmd << "bin/cucumber -cf progress -e \".*fixtures.*\" plugins/*/features"
+  all_feature_dirs = Dir['plugins/*/features'] # overcome a jruby windows bug http://jira.codehaus.org/browse/JRUBY-4527
+  cmd << "bin/cucumber -cf progress -e \".*fixtures.*\" #{all_feature_dirs.join(' ')}"
   sh("#{cmd} && echo 'done'")
 end
 
@@ -209,19 +219,9 @@ Spec = spec = Gem::Specification.new do |s|
   
   s.post_install_message = <<TEXT
 
--------------------------------------------------------------------------------
-
-Please now run:
+To complete setup you need to have an active network connection and run:
 
   $ redcar install
-
-to complete the installation. (NB. do NOT use sudo. In previous versions,
-sudo was required for this step, but now it should be run as the user.)
-
-NB. This will download jars that Redcar needs to run from the internet.
-It will put them into ~/.redcar/assets.
-
--------------------------------------------------------------------------------
 
 TEXT
 end

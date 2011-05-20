@@ -104,8 +104,20 @@ module Redcar
     require 'redcar_quick_start'
     
     $:.push File.expand_path(File.join(File.dirname(__FILE__), "plugin_manager", "lib"))
-    require 'plugin_manager'
+    begin
+      require 'plugin_manager'
+    rescue LoadError
+      # TODO is there a project-wide developer error system? or do we just throw errors?
+      puts <<-ERROR
+
+The 'plugin_manager' portion is missing; you probably haven't loaded the git submodules.
+Try:
+
+    rake initialise
     
+      ERROR
+      exit 1
+    end
     $:.push File.expand_path(File.join(Redcar.asset_dir))
     
     $:.push File.expand_path(File.join(File.dirname(__FILE__), "json", "lib"))
@@ -172,11 +184,12 @@ module Redcar
   
   def self.show_splash
     return if Redcar.no_gui_mode?
-    
-    Swt.create_splash_screen(plugin_manager.plugins.length + 10)
+    unless ARGV.include?("--no-splash")
+      Swt.create_splash_screen(plugin_manager.plugins.length + 10)
+    end
     plugin_manager.on_load do |plugin|
       Swt.sync_exec do
-        Swt.splash_screen.inc
+        Swt.splash_screen.inc if Swt.splash_screen
       end
     end
   end
@@ -187,7 +200,15 @@ module Redcar
     
     Redcar.gui.start
   end
-
+  
+  # Check if redcar was already installed (currently it just looks if the user_dir is present)
+  # 
+  # @return [Bool] true if redcar was installed previously
+  def self.installed?
+    return true if File.directory? user_dir
+    false
+  end
+  
   # Platform specific ~/.redcar
   #
   # @return [String] expanded path

@@ -245,29 +245,60 @@ Redcar.environment: #{Redcar.environment}
         doc.ensure_visible(doc.length)
       end
     end
+    
+    class ForwardCharCommand < DocumentCommand
+      def execute
+        doc.cursor_offset = [doc.cursor_offset + 1, doc.length].min
+      end
+    end
+    
+    class BackwardCharCommand < DocumentCommand
+      def execute
+        doc.cursor_offset = [doc.cursor_offset - 1, 0].max
+      end
+    end
+    
+    class DeleteCharCommand < DocumentCommand
+      def execute
+        if doc.cursor_offset < doc.length
+          doc.delete(doc.cursor_offset, 1)
+        end
+      end
+    end
+
+    class BackspaceCommand < DocumentCommand
+      def execute
+        if doc.cursor_offset > 0
+          doc.delete(doc.cursor_offset - 1, 1)
+        end
+      end
+    end
 
     class ChangeIndentCommand < DocumentCommand
       def execute
         doc.compound do
           doc.edit_view.delay_parsing do
-            if doc.selection?
-              first_line_ix = doc.line_at_offset(doc.selection_range.begin)
-              last_line_ix  = doc.line_at_offset(doc.selection_range.end)
-              if doc.selection_range.end == doc.offset_at_line(last_line_ix)
-                last_line_ix -= 1
-              end
-              first_line_ix.upto(last_line_ix) do |line_ix|
-                indent_line(doc, line_ix)
-              end
-              start_selection = doc.offset_at_line(first_line_ix)
-              if last_line_ix == doc.line_count - 1
-                end_selection = doc.length
+            indenters = edit_view.document.controllers(Redcar::AutoIndenter::DocumentController).first
+            indenters.disable do
+              if doc.selection?
+                first_line_ix = doc.line_at_offset(doc.selection_range.begin)
+                last_line_ix  = doc.line_at_offset(doc.selection_range.end)
+                if doc.selection_range.end == doc.offset_at_line(last_line_ix)
+                  last_line_ix -= 1
+                end
+                first_line_ix.upto(last_line_ix) do |line_ix|
+                  indent_line(doc, line_ix)
+                end
+                start_selection = doc.offset_at_line(first_line_ix)
+                if last_line_ix == doc.line_count - 1
+                  end_selection = doc.length
+                else
+                  end_selection = doc.offset_at_line(last_line_ix + 1)
+                end
+                doc.set_selection_range(start_selection, end_selection)
               else
-                end_selection = doc.offset_at_line(last_line_ix + 1)
+                indent_line(doc, doc.cursor_line)
               end
-              doc.set_selection_range(start_selection, end_selection)
-            else
-              indent_line(doc, doc.cursor_line)
             end
           end
         end
@@ -587,10 +618,14 @@ Redcar.environment: #{Redcar.environment}
         link "Cmd+V",        PasteCommand
         link "Cmd+D",        DuplicateCommand
 
-        link "Home",   MoveTopCommand
-        link "Ctrl+A", MoveHomeCommand
-        link "Ctrl+E", MoveEndCommand
-        link "End",    MoveBottomCommand
+        link "Home",    MoveTopCommand
+        link "Ctrl+A",  MoveHomeCommand
+        link "Ctrl+E",  MoveEndCommand
+        link "End",     MoveBottomCommand
+        link "Ctrl+F",  ForwardCharCommand
+        link "Ctrl+B",  BackwardCharCommand
+        link "Ctrl+D",  DeleteCharCommand
+        link "Ctrl+H",  BackspaceCommand
 
         link "Cmd+[",            DecreaseIndentCommand
         link "Cmd+]",            IncreaseIndentCommand
@@ -756,6 +791,7 @@ Redcar.environment: #{Redcar.environment}
       end
     end
 
+
     def self.menus(window)
       Menu::Builder.build do
         sub_menu "File", :priority => :first do
@@ -778,6 +814,7 @@ Redcar.environment: #{Redcar.environment}
             item "Quit", Application::QuitCommand
           end
         end
+        
         sub_menu "Edit", :priority => 5 do
           group(:priority => :first) do
             item "Tab Info",  EditView::InfoSpeedbarCommand
@@ -816,6 +853,13 @@ Redcar.environment: #{Redcar.environment}
               item "Home",    MoveHomeCommand
               item "End",     MoveEndCommand
               item "Bottom",  MoveBottomCommand
+              
+              separator
+              
+              item "Forward Character",  ForwardCharCommand
+              item "Backward Character", BackwardCharCommand
+              item "Delete Character",   DeleteCharCommand
+              item "Backspace",          BackspaceCommand
             end
           end
 
