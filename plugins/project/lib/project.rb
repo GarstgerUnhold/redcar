@@ -243,8 +243,17 @@ module Redcar
     end
 
     def config_dir
-      dir = File.join(path, ".redcar")
-      FileUtils.mkdir_p(dir)
+      if Redcar.platform == :windows && Redcar.environment != :test 
+        dir = File.join(path, "._redcar")
+      else
+        dir = File.join(path, ".redcar")
+      end
+      unless File.directory? dir
+        FileUtils.mkdir_p(dir)
+        if Redcar.platform == :windows
+          system("attrib.exe +H \"#{dir}") # make hidden for cmd directory listings
+        end
+      end
       dir
     end
 
