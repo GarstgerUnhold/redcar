@@ -1,5 +1,5 @@
 
-require 'swt/full_swt'
+require 'swt/full'
 
 require "application_swt/tab"
 
@@ -15,6 +15,7 @@ require "application_swt/dialogs/modeless_list_dialog_controller"
 require "application_swt/gradient"
 require "application_swt/html_tab"
 require "application_swt/icon"
+require "application_swt/listener_helpers"
 require "application_swt/menu"
 require "application_swt/menu/binding_translator"
 require "application_swt/toolbar"
@@ -26,7 +27,7 @@ require "application_swt/speedbar"
 require "application_swt/treebook"
 require "application_swt/window"
 
-require "application_swt-#{Redcar::VERSION}"
+require "dist/application_swt"
 
 module Redcar
   class ApplicationSWT
@@ -49,20 +50,25 @@ module Redcar
         Redcar.gui.register_dialog_adapter(ApplicationSWT::DialogAdapter.new)
       end
     end
-    
+
     def self.selected_tab_background
       Gradient.new(Redcar::ApplicationSWT.storage['selected_tab_background'])
     end
-    
+
     def self.unselected_tab_background
       Gradient.new(Redcar::ApplicationSWT.storage['unselected_tab_background'])
     end
-    
+
+    def self.tree_background
+      Gradient.new(Redcar::ApplicationSWT.storage['tree_background'])
+    end
+
     def self.storage
       @storage ||= begin
         storage = Plugin::Storage.new('application_swt')
         storage.set_default('selected_tab_background', {0 => "#FEFEFE", 100 => "#EEEEEE"})
         storage.set_default('unselected_tab_background', {0 => "#E5E5E5", 100 => "#D0D0D0"})
+        storage.set_default('tree_background', "#FFFFFF")
         storage
       end
     end
@@ -153,9 +159,9 @@ module Redcar
     end
 
     def refresh_toolbar
-      if Redcar.platform == :osx and @fake_shell
-        fake_toolbar_controller = ApplicationSWT::ToolBar.new(FakeWindow.new(@fake_shell), Redcar.app.main_toolbar, Swt::SWT::FLAT)
-      end
+      # if Redcar.platform == :osx and @fake_shell
+      #   fake_toolbar_controller = ApplicationSWT::ToolBar.new(FakeWindow.new(@fake_shell), Redcar.app.main_toolbar, Swt::SWT::FLAT)
+      # end
     end
 
     def add_listeners

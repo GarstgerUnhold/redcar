@@ -24,6 +24,7 @@ require 'application/menu/item'
 require 'application/menu/lazy_menu'
 require 'application/menu/builder'
 require 'application/menu/builder/group'
+require 'application/navigation_history'
 require 'application/notebook'
 require 'application/speedbar'
 require 'application/tab'
@@ -59,6 +60,9 @@ module Redcar
 
     def self.start
       Redcar.app = Application.new
+      Redcar.plugin_manager.objects_implementing(:app_started).each do |object|
+        object.app_started
+      end
     end
 
     def self.sensitivities
@@ -106,7 +110,7 @@ module Redcar
       ]
     end
 
-    attr_reader :clipboard, :keymap, :menu, :toolbar, :history, :task_queue, :show_toolbar
+    attr_reader :clipboard, :keymap, :menu, :toolbar, :history, :task_queue, :show_toolbar, :navigation_history
 
     # Create an application instance with a Redcar::Clipboard and a Redcar::History.
     def initialize
@@ -114,6 +118,7 @@ module Redcar
       @window_handlers = Hash.new {|h,k| h[k] = []}
       create_clipboard
       create_history
+      @navigation_history = NavigationHistory.new
       @event_spewer = EventSpewer.new
       @task_queue   = TaskQueue.new
       @show_toolbar = !!Application.storage['show_toolbar']
@@ -138,7 +143,7 @@ module Redcar
     end
 
     # Create a new Application::Window, and the controller for it.
-    def new_window
+    def new_window(show=true)
       s = Time.now
       new_window = Window.new
       windows << new_window
@@ -146,15 +151,26 @@ module Redcar
       attach_window_listeners(new_window)
       new_window.refresh_menu
       new_window.refresh_toolbar
-      new_window.show
-      set_focussed_window(new_window)
-      #puts "App#new_window took #{Time.now - s}s"
+      show_window(new_window) if show
       new_window
+    end
+
+    def show_window(window)
+      window.show
+      set_focussed_window(window)
     end
 
     def make_sure_at_least_one_window_open
       if windows.length == 0
         new_window
+      end
+    end
+
+    def make_sure_at_least_one_window_there
+      if windows.length == 0
+        win = new_window(false)
+        set_focussed_window(win)
+        win
       end
     end
 
@@ -174,12 +190,7 @@ module Redcar
       @storage ||= begin
         storage = Plugin::Storage.new('application_plugin')
         storage.set_default('stay_resident_after_last_window_closed', false)
-        # Don't show the toolbar by default on Mac OS X
-        if Redcar.platform == :osx
-          storage.set_default('show_toolbar', false)
-        else
-          storage.set_default('show_toolbar', true)
-        end
+        storage.set_default('show_toolbar', true)
         storage
       end
     end

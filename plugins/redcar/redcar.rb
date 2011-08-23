@@ -76,7 +76,7 @@ module Redcar
         window = Redcar.app.focussed_window
         Redcar.app.windows.each do |win|
           @builder.item(win.title, :type => :radio, :active => (win == window)) do
-            FocusWindowCommand.new(win).run
+            Application::FocusWindowCommand.new(win).run
           end
         end
       end
@@ -245,19 +245,39 @@ Redcar.environment: #{Redcar.environment}
         doc.ensure_visible(doc.length)
       end
     end
-    
+
+    class MoveUpCommand < EditTabCommand
+      def execute
+        tab.edit_view.invoke_action(:LINE_UP)
+      end
+    end
+
+    class MoveDownCommand < EditTabCommand
+      def execute
+        tab.edit_view.invoke_action(:LINE_DOWN)
+      end
+    end
+
     class ForwardCharCommand < DocumentCommand
       def execute
         doc.cursor_offset = [doc.cursor_offset + 1, doc.length].min
       end
     end
-    
+
     class BackwardCharCommand < DocumentCommand
       def execute
         doc.cursor_offset = [doc.cursor_offset - 1, 0].max
       end
     end
-    
+
+    class OpenLineCommand < DocumentCommand
+      def execute
+        prev = doc.cursor_offset
+        doc.insert_at_cursor("\n")
+        doc.cursor_offset = prev
+      end
+    end
+
     class DeleteCharCommand < DocumentCommand
       def execute
         if doc.cursor_offset < doc.length
@@ -271,6 +291,18 @@ Redcar.environment: #{Redcar.environment}
         if doc.cursor_offset > 0
           doc.delete(doc.cursor_offset - 1, 1)
         end
+      end
+    end
+    
+    class BackwardNavigationCommand < Command
+      def execute
+        Redcar.app.navigation_history.backward
+      end
+    end
+    
+    class ForwardNavigationCommand < Command
+      def execute
+        Redcar.app.navigation_history.forward
       end
     end
 
@@ -466,6 +498,25 @@ Redcar.environment: #{Redcar.environment}
       end
     end
 
+    class TransposeCharactersCommand < Redcar::DocumentCommand
+      def execute
+        line        = doc.get_line(doc.cursor_line)
+        line_offset = doc.cursor_line_offset
+
+        if line_offset > 0 and line.length >= 2
+          if line_offset < line.length - 1
+            first_char  = line.chars[line_offset - 1].to_s
+            second_char = line.chars[line_offset].to_s
+            doc.replace(doc.cursor_offset - 1, 2, second_char + first_char)
+          elsif line_offset == line.length - 1
+            first_char  = line.chars[line_offset - 2].to_s
+            second_char = line.chars[line_offset - 1].to_s
+            doc.replace(doc.cursor_offset - 2, 2, second_char + first_char)
+          end
+        end
+      end
+    end
+
     class SortLinesCommand < Redcar::DocumentCommand
 
       def execute
@@ -617,6 +668,7 @@ Redcar.environment: #{Redcar.environment}
         link "Cmd+C",        CopyCommand
         link "Cmd+V",        PasteCommand
         link "Cmd+D",        DuplicateCommand
+        link "Ctrl+T",       TransposeCharactersCommand
 
         link "Home",    MoveTopCommand
         link "Ctrl+A",  MoveHomeCommand
@@ -624,8 +676,15 @@ Redcar.environment: #{Redcar.environment}
         link "End",     MoveBottomCommand
         link "Ctrl+F",  ForwardCharCommand
         link "Ctrl+B",  BackwardCharCommand
+        link "Ctrl+P",  MoveUpCommand
+        link "Ctrl+N",  MoveDownCommand
+        link "Ctrl+B",  BackwardCharCommand
+        link "Ctrl+O",  OpenLineCommand
         link "Ctrl+D",  DeleteCharCommand
         link "Ctrl+H",  BackspaceCommand
+        
+        link "Ctrl+Alt+Left", BackwardNavigationCommand
+        link "Ctrl+Alt+Right", ForwardNavigationCommand
 
         link "Cmd+[",            DecreaseIndentCommand
         link "Cmd+]",            IncreaseIndentCommand
@@ -715,6 +774,9 @@ Redcar.environment: #{Redcar.environment}
         link "End",        MoveEndCommand
         link "Ctrl+Alt+E", MoveEndCommand
         link "Ctrl+End",   MoveBottomCommand
+        
+        link "Alt+[", BackwardNavigationCommand
+        link "Alt+]", ForwardNavigationCommand
 
         link "Ctrl+[",           DecreaseIndentCommand
         link "Ctrl+]",           IncreaseIndentCommand
@@ -786,8 +848,8 @@ Redcar.environment: #{Redcar.environment}
         item "Save File As", :command => Project::SaveFileAsCommand, :icon => :save_as, :barname => :core
         item "Undo", :command => UndoCommand, :icon => :undo, :barname => :core
         item "Redo", :command => RedoCommand, :icon => :redo, :barname => :core
-        item "New Notebook", :command => Application::OpenNewNotebookCommand, :icon => File.join(Redcar::ICONS_DIRECTORY, "book--plus.png"), :barname => :edit
-        item "Close Notebook", :command => Application::CloseNotebookCommand, :icon => File.join(Redcar::ICONS_DIRECTORY, "book--minus.png"), :barname => :edit
+        item "New Notebook", :command => Application::OpenNewNotebookCommand, :icon => File.join(Redcar.icons_directory, "book--plus.png"), :barname => :edit
+        item "Close Notebook", :command => Application::CloseNotebookCommand, :icon => File.join(Redcar.icons_directory, "book--minus.png"), :barname => :edit
       end
     end
 
@@ -814,7 +876,7 @@ Redcar.environment: #{Redcar.environment}
             item "Quit", Application::QuitCommand
           end
         end
-        
+
         sub_menu "Edit", :priority => 5 do
           group(:priority => :first) do
             item "Tab Info",  EditView::InfoSpeedbarCommand
@@ -853,13 +915,25 @@ Redcar.environment: #{Redcar.environment}
               item "Home",    MoveHomeCommand
               item "End",     MoveEndCommand
               item "Bottom",  MoveBottomCommand
+
+              separator
+
+              item "Forward Character",  ForwardCharCommand
+              item "Backward Character", BackwardCharCommand
+              item "Previous Line",      MoveUpCommand
+              item "Next Line",          MoveDownCommand
+              item "Open Line",          OpenLineCommand
+
+              separator
+
+              item "Delete Character",   DeleteCharCommand
+              item "Backspace",          BackspaceCommand
+              item "Transpose",          TransposeCharactersCommand
               
               separator
               
-              item "Forward Character",  ForwardCharCommand
-              item "Backward Character", BackwardCharCommand
-              item "Delete Character",   DeleteCharCommand
-              item "Backspace",          BackspaceCommand
+              item "Backward Navigation", BackwardNavigationCommand
+              item "Forward Navigation", ForwardNavigationCommand
             end
           end
 
@@ -989,7 +1063,7 @@ Redcar.environment: #{Redcar.environment}
           Application.start
           ApplicationSWT.start
           EditViewSWT.start
-          Swt.splash_screen.inc(1) if Swt.splash_screen
+          SplashScreen.splash_screen.inc(1) if SplashScreen.splash_screen
           s = Time.now
           if Redcar.gui
             Redcar.app.controller = ApplicationSWT.new(Redcar.app)
@@ -999,12 +1073,12 @@ Redcar.environment: #{Redcar.environment}
           Redcar.log.info("initializing gui took #{Time.now - s}s")
         end
         Redcar.update_gui do
-          Swt.splash_screen.close if Swt.splash_screen
-          win = Redcar.app.make_sure_at_least_one_window_open
-          win.close if win and args.include?("--no-window")
+          SplashScreen.splash_screen.close if SplashScreen.splash_screen
+          win = Redcar.app.make_sure_at_least_one_window_there
           Redcar.log.info("startup milestone: window open #{Time.now - Redcar.process_start_time}")
           Redcar::Project::Manager.start(args)
           Redcar.log.info("startup milestone: project open #{Time.now - Redcar.process_start_time}")
+          win.show if win and !args.include?("--no-window")
         end
         Redcar.load_useful_libraries
         Redcar.log.info("startup milestone: complete: #{Time.now - Redcar.process_start_time}")

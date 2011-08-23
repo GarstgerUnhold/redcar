@@ -264,8 +264,10 @@ module Redcar
         end
         if should_open == :yes
           win = Redcar.app.focussed_window
-          win = Redcar.app.new_window if !win or Manager.in_window(win)
+          win = Redcar.app.new_window(false) if !win or Manager.in_window(win)
           project.open(win) if project.ready?
+          Redcar.app.show_window(win)
+          project
         end
       end
 
@@ -418,7 +420,7 @@ module Redcar
       end
 
       def self.close_tab_guard(tab)
-        if tab.respond_to?(:edit_view) && tab.edit_view.document.modified?
+        if tab.respond_to?(:edit_view) && tab.edit_view.document.modified? && !tab.is_a?(REPL::Tab)
           tab.focus
           result = Application::Dialog.message_box(
           "This tab has unsaved changes. \n\nSave before closing?",
