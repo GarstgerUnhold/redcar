@@ -25,32 +25,6 @@ module Redcar
     result
   end
 
-  class TimeoutError < StandardError; end
-
-  def self.timeout(limit)
-    x = Thread.current
-    result = nil
-    y = Thread.new do
-      begin
-        result = yield
-      rescue Object => e
-        x.raise e
-      end
-    end
-    s = Time.now
-    loop do
-      if not y.alive?
-        break
-      elsif Time.now - s > limit
-        y.kill
-        raise Redcar::TimeoutError, "timed out after #{Time.now - s}s"
-        break
-      end
-      sleep 0.1
-    end
-    result
-  end
-
   module Top
     class OpenNewEditTabCommand < Command
 
@@ -1025,6 +999,11 @@ Redcar.environment: #{Redcar.environment}
           group(:priority => :last) do
             item "About", AboutCommand
             item "New In This Version", ChangelogCommand
+            separator
+            item "Check for Updates", :command => Application::ToggleCheckForUpdatesCommand, 
+                                      :type => :check, 
+                                      :active => Application::Updates.check_for_updates?
+            item "Update Available",  Application::OpenUpdateCommand
           end
         end
       end
@@ -1080,11 +1059,13 @@ Redcar.environment: #{Redcar.environment}
           Redcar.log.info("startup milestone: project open #{Time.now - Redcar.process_start_time}")
           win.show if win and !args.include?("--no-window")
         end
-        Redcar.load_useful_libraries
         Redcar.log.info("startup milestone: complete: #{Time.now - Redcar.process_start_time}")
         if args.include?("--compute-textmate-cache-and-quit")
           Redcar::Textmate.all_bundles
           exit
+        end
+        Thread.new do
+          Application.check_for_new_version
         end
       rescue => e
         Redcar.log.error("error in startup: #{e.inspect}")

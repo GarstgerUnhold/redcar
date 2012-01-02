@@ -1,5 +1,5 @@
 
-require File.join(File.dirname(__FILE__), "..", "spec_helper")
+require "spec_helper"
 
 describe Redcar::Plugin::SharedStorage do
   
@@ -12,7 +12,7 @@ describe Redcar::Plugin::SharedStorage do
   end
   
   def remove_test_files
-    FileUtils.rm_rf(Redcar::Plugin::Storage.new('test_shared_storage').send(:path))
+    FileUtils.rm_rf(Redcar::Plugin::SharedStorage.new('test_shared_storage').send(:path))
   end
   
   it "should set the default when it is not already set and the value is an Array" do

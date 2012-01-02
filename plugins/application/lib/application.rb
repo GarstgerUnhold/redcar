@@ -34,6 +34,7 @@ require 'application/tree/command'
 require 'application/tree/controller'
 require 'application/tree/mirror'
 require 'application/treebook'
+require 'application/updates'
 require 'application/window'
 
 require 'application/commands/application_commands'
@@ -106,7 +107,10 @@ module Redcar
             notebook.tabs.any?
           end
         end,
-        Sensitivity.new(:always_disabled, Redcar.app, false,[]) do; false; end
+        Sensitivity.new(:always_disabled, Redcar.app, false, []) { false },
+        Sensitivity.new(:update_available, Redcar.app, false, [:update_available]) do
+          Application::Updates.update_available?
+        end
       ]
     end
 
@@ -122,6 +126,10 @@ module Redcar
       @event_spewer = EventSpewer.new
       @task_queue   = TaskQueue.new
       @show_toolbar = !!Application.storage['show_toolbar']
+    end
+    
+    def self.instance_id
+      Application.storage["instance_id"]
     end
 
     def events
@@ -191,6 +199,8 @@ module Redcar
         storage = Plugin::Storage.new('application_plugin')
         storage.set_default('stay_resident_after_last_window_closed', false)
         storage.set_default('show_toolbar', true)
+        storage.set_default('instance_id', java.util.UUID.randomUUID.to_s)
+        storage.set_default('should_check_for_updates', true)
         storage
       end
     end
@@ -340,6 +350,14 @@ module Redcar
       if @application_focus == false
         @application_focus = true
         notify_listeners(:focussed, self)
+      end
+      Thread.new do
+        Application::Updates.check_for_new_version
+        if Application::Updates.update_available?
+          Redcar.update_gui do
+            notify_listeners(:update_available, self)
+          end
+        end
       end
     end
 

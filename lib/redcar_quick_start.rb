@@ -5,12 +5,12 @@ module Redcar
   DRB_PORTS = {"user" => 10021, "test" => 10022, "development" => 10021}
   DONT_READ_STDIN_ARG = "--ignore-stdin"
 
-  def self.environment
-    :user
-  end
-  
   def self.drb_port
     DRB_PORTS[Redcar.environment.to_s]
+  end
+
+  def self.environment
+    @environment || :user
   end
 
   def self.read_stdin
@@ -51,7 +51,7 @@ module Redcar
           if arg =~ /--untitled-file=(.*)/
             path = $1 if File.file?($1)
             untitled = true
-          elsif arg !~ /^--/ # not --something
+          elsif arg !~ /^-/ # not --something
             path = File.expand_path(arg)
             if !File.exist?(path)
               require 'fileutils'

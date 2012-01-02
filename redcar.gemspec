@@ -16,6 +16,7 @@ class RedcarGemspecHelper
     r = %w(CHANGES LICENSE Rakefile README.md) +
                             Dir.glob("bin/redcar") +
                             Dir.glob("config/**/*") +
+                            Dir.glob("vendor/**/*") +
                             remove_gitignored_files(Dir.glob("lib/**/*")) +
                             remove_gitignored_files(Dir.glob("plugins/**/*"))
     remove_matching_files(r, "multi-byte")
@@ -24,8 +25,8 @@ end
 
 Gem::Specification.new do |s|
   s.name        = "redcar-dev"
-  s.version     = "0.12.16dev" # also change in lib/redcar.rb
-  s.platform    = "java"
+  s.version     = "0.12.26dev" # also change in lib/redcar.rb
+  s.platform    = "ruby"
   s.authors     = ["Daniel Lucraft"]
   s.email       = ["dan@fluentradical.com"]
   s.homepage    = "http://github.com/danlucraft/redcar"
@@ -35,13 +36,12 @@ Gem::Specification.new do |s|
   s.files        = RedcarGemspecHelper.gem_manifest
   s.executables  = ["redcar"]
   s.require_path = 'lib'
-  s.extra_rdoc_files  = %w(README.md LICENSE CHANGES Rakefile)
+  s.extra_rdoc_files  = %w(README.md LICENSE CHANGES Gemfile Rakefile)
   
-  s.add_dependency("ffi")
   s.add_dependency("git")
-  s.add_dependency("json")
   s.add_dependency("spoon")
   s.add_dependency("lucene", "~> 0.5.0.beta.1")
+  s.add_dependency("bundler")
   s.add_dependency("net-ssh")
   s.add_dependency("net-sftp")
   s.add_dependency("net-ftp-list")
@@ -52,11 +52,13 @@ Gem::Specification.new do |s|
   s.add_dependency("swt")
   s.add_dependency("plugin_manager")
   s.add_dependency("redcar-icons")
+  s.add_dependency("redcar-jruby")
   s.add_dependency("redcar-svnkit")
   s.add_dependency("redcar-bundles")
   s.add_dependency("redcar-javamateview")
+  s.add_dependency("redcar-xulrunner-win") if s.platform.to_s =~ /win/
   
-  s.add_development_dependency("cucumber")
+  s.add_development_dependency("cucumber", "=1.1.2")
   s.add_development_dependency("rspec")
   s.add_development_dependency("watchr")
 end

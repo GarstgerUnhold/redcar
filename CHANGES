@@ -1,8 +1,8 @@
 Version 0.12 (TBA)
 ==================
 
- * Features run all the way through again, and can be run in the background 
-   (the test window no longer needs to be focussed) (Dan Lucraft)
+ * Features run all the way through again, and use Swtbot in places to 
+   allow us to simulate events more accurately (Helpful for macros) (Dan Lucraft)
  * Added --no-splash option (Dan Lucraft)
  * Fix runnables for JRuby 1.6.1 (Chris Nelson)
  * Improved developer first experience (Dr Nic Williams)
@@ -22,6 +22,8 @@ Version 0.12 (TBA)
  * Project tree has colourful icons (Delisa Mason)
  * Uses gems to install everything (Dan Lucraft)
  * Wildcards permitted in project search (Delisa Mason)
+ * Installation entirely through Rubygems (Dan Lucraft)
+ * Rad new icon (Delisa Mason)
 
 Version 0.11 (23 March 2011)
 ============================

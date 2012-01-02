@@ -1,7 +1,5 @@
 
 $:.push(File.expand_path(File.join(File.dirname(__FILE__))))
-$:.push(File.expand_path(File.join(File.dirname(__FILE__), %w{.. vendor spoon lib})))
-$:.push(File.expand_path(File.join(File.dirname(__FILE__), %w{.. vendor ffi lib})))
 
 require 'redcar/usage'
 
@@ -14,16 +12,29 @@ require 'regex_replace'
 require 'forwardable'
 require 'uri'
 require 'fileutils'
+require 'net/http'
+
+# If we are running as a Gem, set the gem home so that our gemified
+# jruby can find the installed gems.
+#
+# (The Gemfile.lock file is never put into the gem, so if it
+# exists we must be running in a development environment.)
+unless File.exist?(File.expand_path("../../Gemfile.lock", __FILE__))
+  ENV["GEM_HOME"] = File.expand_path("../../../../", __FILE__)
+end
 
 require 'rubygems'
+require 'bundler/setup'
 require 'redcar-icons'
 
 begin
   if Config::CONFIG["RUBY_INSTALL_NAME"] == "jruby"
+=begin
     gem "spoon"
     require 'spoon'
     module Redcar; SPOON_AVAILABLE = true; end
   else
+=end
     module Redcar; SPOON_AVAILABLE = false; end
   end
 rescue LoadError
@@ -57,7 +68,7 @@ end
 #
 # and so on.
 module Redcar
-  VERSION         = '0.12.16dev' # also change in the gemspec!
+  VERSION         = '0.12.26dev' # also change in the gemspec!
   VERSION_MAJOR   = 0
   VERSION_MINOR   = 12
   VERSION_RELEASE = 0
@@ -103,10 +114,12 @@ module Redcar
   def self.add_plugin_sources(manager)
     manager.add_plugin_source(File.join(root, "plugins"))
     manager.add_plugin_source(File.join(user_dir, "plugins"))
-    manager.add_gem_plugin_source
+    unless Redcar.environment == :test
+      manager.add_gem_plugin_source
+    end
   end
 
-  def self.load_prerequisites
+  def self.load_prerequisites(options={})
     exit if ARGV.include?("--quit-immediately")
     require 'java'
     
@@ -117,8 +130,10 @@ module Redcar
     
     $:.push File.expand_path(File.join(Redcar.asset_dir))
 
-    gem "json"
-    require 'json'
+    unless defined?(JSON)
+      $:.unshift(File.expand_path("../../vendor/json-1.6.4-java/lib", __FILE__))
+      require 'json'
+    end
 
     gem "jruby-openssl"
     require 'openssl'
@@ -127,18 +142,17 @@ module Redcar
     
     gem 'swt'
     require 'swt/minimal'
+      
+    unless no_gui_mode?
+      gui = Redcar::Gui.new("swt")
+      gui.register_event_loop(Swt::EventLoop.new)
+      gui.register_features_runner(Swt::CucumberRunner.new)
+      Redcar.gui = gui
     
-    gui = Redcar::Gui.new("swt")
-    gui.register_event_loop(Swt::EventLoop.new)
-    gui.register_features_runner(Swt::CucumberRunner.new)
-    Redcar.gui = gui
-    
-    plugin_manager.load("splash_screen")
+      plugin_manager.load("splash_screen")
+    end
   end
   
-  def self.load_useful_libraries
-  end
-
   def self.load_plugins
     begin
       exit if ARGV.include?("--quit-after-splash")
@@ -174,8 +188,8 @@ module Redcar
     end
   end
   
-  def self.load_unthreaded
-    load_prerequisites
+  def self.load_unthreaded(options={})
+    load_prerequisites(options)
     load_plugins
   end
   
@@ -286,7 +300,7 @@ module Redcar
   end
   
   def self.show_log?
-    ARGV.include?("--show-log")
+    ARGV.include?("--show-log") or ENV["REDCAR_SHOW_LOG"]
   end
   
   def self.custom_log_level

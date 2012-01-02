@@ -8,35 +8,50 @@ def filter_dialog_items
 end
 
 Then /^there should be a filter dialog open$/ do
-  filter_dialog.should_not be_nil
+  Swt.sync_exec do
+    filter_dialog.should_not be_nil
+  end
 end
 
 Then /^there should be no filter dialog open$/ do
-  filter_dialog.should be_nil
+  Swt.sync_exec do
+    filter_dialog.should be_nil
+  end
 end
 
 When /^I set the filter to "(.*)"$/ do |text|
-  filter_dialog.text.set_text(text)
+  Swt.sync_exec do
+    filter_dialog.text.set_text(text)
+  end
 end
 
 When /^I select in the filter dialog$/ do
-  filter_dialog.controller.selected
+  Swt.sync_exec do
+    filter_dialog.controller.selected
+  end
 end
 
 When /^I wait "(.*)" seconds?$/ do |time|
-  Cucumber::Ast::StepInvocation.wait_time = time.to_f
+  s = Time.now + time.to_f
+  sleep 0.1 until Time.now > s
 end
 
 Then /^the filter dialog should have (no|\d+) entr(?:y|ies)$/ do |num|
-  num = (num == "no" ? 0 : num.to_i)
-  filter_dialog_items.length.should == num
+  Swt.sync_exec do
+    num = (num == "no" ? 0 : num.to_i)
+    filter_dialog_items.length.should == num
+  end
 end
 
 Then /^I should see "(.*)" at (\d+) the filter dialog$/ do |text, pos|
-  pos = pos.to_i
-  filter_dialog_items[pos].should == text
+  Swt.sync_exec do
+    pos = pos.to_i
+    filter_dialog_items[pos].should == text
+  end
 end
 
 Then /^I should not see "(.*)" in the filter dialog$/ do |text|
-  filter_dialog_items.include?(text).should be_false
+  Swt.sync_exec do
+    filter_dialog_items.include?(text).should be_false
+end
 end
