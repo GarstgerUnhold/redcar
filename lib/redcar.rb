@@ -14,17 +14,18 @@ require 'uri'
 require 'fileutils'
 require 'net/http'
 
-# If we are running as a Gem, set the gem home so that our gemified
-# jruby can find the installed gems.
-#
-# (The Gemfile.lock file is never put into the gem, so if it
-# exists we must be running in a development environment.)
-unless File.exist?(File.expand_path("../../Gemfile.lock", __FILE__))
-  ENV["GEM_HOME"] = File.expand_path("../../../../", __FILE__)
+require 'rubygems'
+
+# If we are running as a Gem, don't use bundler and also set the gem home 
+# so our gemified jruby can find the installed gems.
+prospective_gem_home = File.expand_path("../../../../", __FILE__)
+entries_in_gem_home  = Dir[prospective_gem_home + "/*"].map {|path| File.basename(path) }
+if (["cache", "gems"] - entries_in_gem_home).length == 0
+  ENV["GEM_HOME"]       = prospective_gem_home
+else
+  require 'bundler/setup'
 end
 
-require 'rubygems'
-require 'bundler/setup'
 require 'redcar-icons'
 
 begin
@@ -68,7 +69,7 @@ end
 #
 # and so on.
 module Redcar
-  VERSION         = '0.13.0dev' # also change in the gemspec!
+  VERSION         = '0.13.5dev' # also change in the gemspec!
   VERSION_MAJOR   = 0
   VERSION_MINOR   = 13
   VERSION_RELEASE = 0
